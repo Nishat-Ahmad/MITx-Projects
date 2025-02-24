@@ -329,54 +329,39 @@ def extract_words(text):
     
     return text.lower().split()
 
-def bag_of_words(texts, remove_stopword=False):
+def bag_of_words(texts, stopwords_path="stopwords.txt"):
     """
-    Args:
-        `texts` - a list of natural language strings.
-        `remove_stopword` - Boolean flag to remove stopwords if set to True.
-        
-    Returns:
-        A dictionary mapping each word appearing in `texts` to a unique index.
+    Creates a bag-of-words feature dictionary from the given list of texts.
+    Stopwords from stopwords.txt are excluded.
     """
-    indices_by_word = {}
-    stopwords = {"he", "is", "on", "the", "there", "to"}
+    dictionary = {}
+    stopwords = set()
+    
+    # Load stopwords
+    with open(stopwords_path, "r") as f:
+        stopwords = set(word.strip().lower() for word in f.readlines())
 
     for text in texts:
-        word_list = extract_words(text)
+        words = text.split()
+        for word in words:
+            word = word.lower()
+            if word not in dictionary and word not in stopwords:  # Exclude stopwords
+                dictionary[word] = len(dictionary)
 
-        for word in word_list:
-            if remove_stopword and word in stopwords:
-                continue
+    return dictionary
 
-            if word not in indices_by_word:
-                indices_by_word[word] = len(indices_by_word)
-
-    return indices_by_word
-
-
-
-def extract_bow_feature_vectors(reviews, indices_by_word, binarize=True):
-    """
-    Args:
-        `reviews` - a list of natural language strings.
-        `indices_by_word` - a dictionary that maps words to unique indices.
-        `binarize` - If True, encodes presence of a word as 1 (one-hot encoding).
-
-    Returns:
-        A matrix representing each review via bag-of-words features.
-        The matrix has shape (n, m), where n is the number of reviews and m is the number of words in the dictionary.
-    """
-    feature_matrix = np.zeros([len(reviews), len(indices_by_word)], dtype=np.float64)
-
-    for i, text in enumerate(reviews):
-        word_list = extract_words(text)
-        for word in word_list:
-            if word in indices_by_word:
-                word_index = indices_by_word[word]
-                
-                if binarize:    feature_matrix[i, word_index] = 1
-                else:   feature_matrix[i, word_index] += 1
-
+def extract_bow_feature_vectors_count(texts, dictionary):
+    """ Extracts Bag-of-Words feature vectors with word counts instead of binary presence. """
+    num_texts = len(texts)
+    num_words = len(dictionary)
+    
+    feature_matrix = np.zeros((num_texts, num_words))
+    
+    for i, text in enumerate(texts):
+        words = text.split()
+        for word in words:
+            if word in dictionary:
+                feature_matrix[i, dictionary[word]] += 1  # Count occurrences instead of binary 0/1
     return feature_matrix
 
 
